@@ -1,0 +1,663 @@
+---
+title: "Sparse Modelling with Categorical Predictors"
+subtitle: "A Brief Overview"
+author: "Shrayan Roy"
+institute: "Indian Statistical Institute, Delhi Center"
+date: "20/05/2023"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      ratio: 16:9
+---
+
+```{css,echo = F}
+
+.red{color: red;}
+.green{color: green;}
+.blue{color: blue;}
+
+```
+
+```{r,echo = F,eval = F}
+# Introduction :
+
+* Handling **Sparse data** is always being an engrossing topic in Statistics. 
+
+--
+
+* It is always a challenging problem for practitioners to work with sparse datasets (e.g. Sparse Contingency Table) as many statistical model ignores the effect of
+Sparseness in data.
+
+--
+
+* On the other hand **Sparse Modeling** is another engrossing topic of statistics. 
+
+* And it becomes extremely important in High-Dimensional settings. Where, number of variables $p$ is very large.
+
+--
+
+* The modeling becomes more challenging, when there are many categorical explanatory variables. 
+
+--
+
+* But, are these two .red[Sparse] same ? 
+
+* What is the difference between the two.
+
+---
+```
+
+```{r setup1, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Sparse Modeling :
+
+* It refers to a modeling approach that aims to identify and utilize a small number of important features or variables in a dataset, while ignoring or discarding the less important ones. 
+
+* Here, "sparse" refers to the idea of using a small number of important features or variables in a dataset, while ignoring or discarding the less important ones.
+
+--
+
+* Some frequently used Sparse Modeling approaches are - Lasso Regression, Ridge Regression, Elastic Net Regression.
+
+--
+
+* All these three types also falls under the category of Penalized Regression, as well as Constrained Regression. 
+
+* They help in selecting the important variables by reducing the coefficient of not so important (in a relative sense) to zero. 
+
+* In case of Lasso, the coefficient of that variables in the model become exactly equal to zero.
+
+--
+
+* Thus, using the above approaches we basically select coefficients, rather than variables. 
+
+* If it is a metric variable, it simply means selecting that variable only. But this becomes problematic for .red[categorical explanatory variable]. 
+
+---
+
+# Sparse Modeling(Contd.):
+
+
+* Let us illustrate through example - if a categorical variable have four categories. Then, in a **linear regression model** three dummy variables are needed for that categorical variable. It may happen that using lasso, one dummy is selected. Also, the selection depends on
+the .green[**reference category chosen**].
+
+--
+
+* So, we need to select coefficient in a group wise manner. For that, another sparse modeling approach is available called **Group-Lasso**. This method has a separate objective. But, we can use this for our purpose by considering group of coefficients as the collection of coefficient of the dummy variables corresponding to categorical variables.
+
+--
+
+* But, another important question when we have categorical explanatory variable is that - 
+  
+    Which levels within a categorical explanatory variable are similar with respect to response ?
+
+  
+* This type of questions are particularly important, when the categorical variables have very large number of levels. For example - In Bio-statistics such situation arises very frequently. But, Group-Lasso doesn't take care of this issue. 
+
+--
+
+* Possible solutions may be to use .red[Variable-Fusion] and .red[Fused Lasso].But, we need to tackle the situation differently depending upon Nominal or Ordinal nature of the variable. 
+
+
+---
+
+* These issues and there possible solutions are addressed in the following paper :
+
+
+```{r,echo = F,out.width = "750px",fig.align='center'}
+
+knitr::include_graphics("paper_cover.PNG",)
+
+```
+
+---
+
+# Proposed Solution :
+
+In the following we consider the penalized least squares criterion -
+
+$$Q_p(\mathbf{\beta}) = (\mathbf{y}−\mathbf{X}\mathbf{\beta})^T(\mathbf{y}−\mathbf{X}\mathbf{\beta}) + λJ(\mathbf{\beta})$$
+Where, $\mathbf{X}$ is the design matrix. $p$ denotes the number of variables. $\mathbf{\beta}$ is the parameter vector. $\mathbf{y}$ is the vector of observed values of response. Here, response is assumed to be continuous. $J(\beta)$ is the penalty term. The estimate of $\beta$ is obtained by - 
+
+$$\hat{\beta}=\underset{\beta}{argmin} \ Q_p(\mathbf{\beta})$$
+
+* Now, the question is what should be the penalty $J(\beta)$, so that we will get the benefit of both group lasso and variable-fusion ? 
+
+--
+
+* To put things simple, we will assume that our linear regression model consists of only one predictor, which is categorical.
+
+* Corresponding to the categorical predictor, we have $k$ dummy variables $x_1,x_2,...,x_k$. 
+
+---
+
+# Choice of penalty $J(\beta)$ :
+
+### For Nominal Scale :
+
+$$J(\beta) = \underset{i>j}\sum w_{ij}|\beta_i − \beta_j|$$
+
+with weights $w_{ij}$ and $\beta_i$ denoting the coefficient of dummy $x_i$. Since the ordering of $x_0,...,x_k$ is arbitrary, not only differences $\beta_i−\beta_{i−1}$ (as in original fusion methodology), but all differences $\beta_i−\beta_{i−1}$ are considered. Since $i=0$ is chosen as reference, $\beta_0=0$ is fixed.
+
+### For Ordinal Scale :
+
+$$J(\beta)=\sum_{i=1}^{k}w_{i}|\beta_i − \beta_{i-1}|$$
+Since, in the case of ordered categories the ordering of dummy coefficients is meaningful, consecutive differences are considered. 
+
+---
+
+# Computational Issues :
+
+* To find the actual solution, constrained minimization is done instead of penalized minimization.
+
+--
+
+* For estimation purpose original parameters are transformed into $\theta_{ij}=\beta_i-\beta_j$. So, we have $k(k-1)$ number of parameters. (**For nominal scale variables**)
+
+* But, one has to take care of the restrictions $\theta_{ij}=\theta_{i0}-\theta_{j0}$ $\forall{i.j}$ for estimation purpose.
+
+* For practical estimation, parameters $\theta_{ij}$ are additionally split into positive and negative parts, that is,
+$\theta_{ij}=\theta^{+}_{ij}−\theta^{-}_{ij}$
+
+--
+
+* **Quadratic programming** is used for minimization purpose. But, there can be some numerical problems with this.
+
+* That's why an approximate solution can be found by - 
+
+$$\hat{\theta}_{\gamma,\lambda} = \underset{\theta}{argmin}\ \{ (\mathbf{y- Z\theta})^{T}(\mathbf{y- Z\theta}) + \gamma\sum_{i > j > 0}(\theta_{ij}-\theta_{i0}+\theta_{j0})^2 + \lambda\sum_{i>j}|\theta_{ij}|\}$$
+
+* Where, $Z$ is so that $\mathbf{Z\theta}=\mathbf{X\beta}$. 
+
+---
+
+# Computational Issues(contd.):
+
+* One can reformulate the problem as a lasso problem. If matrix $A$ represents restrictions $\theta_{ij}=\theta_{i0}−\theta_{j0}$ in terms of $\mathbf{A\theta}=0$. Then, with augmented data $\tilde{Z}=(Z^T,\sqrt{\gamma}A^T)^T$ and $\tilde{y}=(y^T,0)^T$, we have - 
+
+$$\hat{\theta}_{\gamma,\lambda} = \underset{\theta}{argmin} \ \{(\mathbf{\tilde{y} - \tilde{Z}\theta)^{T}}(\mathbf{\tilde{y} - \tilde{Z}\theta)} + \lambda\sum_{i>j}|\theta_{ij}|\}$$
+
+* By doing this, we can compute the whole path of $\hat{\theta}_{\gamma,\lambda}$. 
+
+--
+
+* In case of ordinal predictors also, we can reformulate the problem in a similar manner, by defining $\delta_{i}=\beta_{i}-\beta_{i-1} \ \forall{ \ i}$. Here also we can form a similar lasso problem. 
+
+
+---
+
+# Multiple Input :
+
+* In general, we can have more than one predictor. Then, our penalization criterion will be different.
+
+* Since, our concern is about categorical predictors only. We will consider a model consisting of $p$ categorical predictors $x_1,x_2,..x_p$ with levels $0,...,k_l$ for variable $x_l$ ( $l= 1,...,p$, and fixed $p$).
+
+* The corresponding penalty term would be $J(\beta)=\sum_{l = 1}^{p}{J_l(\beta_l)}$ with
+
+  $J(\beta_l) = \underset{i>j}\sum w_{ij}^{(l)}|\beta_{li} − \beta_{lj}|$    or,  $J(\beta_l)=\sum_{i=1}^{k}w_{i}^{(l)}|\beta_i − \beta_{i-1}|$
+
+  depending upon the scale level of predictor $x_l$. The first expression refers to nominal covariates, the second to ordinal ones.
+
+```{css, echo=FALSE}
+.scroll-1000 {
+  max-height: 400px;
+  max-width: 1000px;
+  overflow-y: auto;
+  background-color: inherit;
+}
+``` 
+
+```{r xaringan-panelset, echo=FALSE}
+xaringanExtra::use_panelset()
+```
+
+---
+
+#Choice of Weights :
+
+* In many situations weights $w^{(l)}_{ij} \not= 1$ are preferred over the simple weights $w^{(l)}_{ij} = 1$.
+
+* The higher the weights, the higher penalization is made, the more quickly corresponding coefficient will become zero. 
+
+--
+
+* For
+nominal variables .green[Bondell] and .green[Reich] (2009) suggested the weights -  
+
+$$w^{(l)}_{ij} = (k_l+1)^{-1} \sqrt{\frac{n^{(l)}_i + n^{(l)}_j}{n}}$$
+Where, $n^{(l)}_i$ and $n^{(l)}_j$ respectively denote the number of observations corresponding to level i,j of $x_l$ and $k_l$ is the number of levels of variable.
+
+--
+
+* There is also adaptive version of weights, where weights contain an additional factor $|\beta^{LS}_{li} - \beta^{LS}_{lj}|^{-1}$. Basically, if ordinary least square estimates corresponding to two dummy variables are very close. Then, these adaptive version of weights put higher weights i.e. higher penalties. 
+
+---
+
+# Refitting Procedures :
+
+* The most attractive features of the methods described above are variable selection and clustering. 
+
+--
+
+* However, due to penalization,estimates are obviously biased. 
+
+* In regression analysis in general — we are also interested in parameter estimation and prediction accuracy.
+
+* In order to reduce the bias, refitting procedures have been proposed by several authors.
+
+* In refitting approach, we refit the the model using the variables having non-zero coefficients with fused levels.
+
+---
+
+# Application :
+
+* We will apply the above discussed method on a dataset.
+
+--
+
+* Implementation is available in .red[**R**]. 
+
+* But, It is more general. Infact, the available implementation uses **Smurf Algorithm** .
+
+--
+
+* Which is discussed in the paper [Devriendt, S., K. Antonio, T. Reynkens, and R. Verbelen. 2021 : Sparse regression with Multi-type Regularized Feature modeling](https://arxiv.org/pdf/1810.03136.pdf). 
+
+--
+
+* This paper extends the application to glm class of families as well. 
+
+* We will discuss about it briefly.
+
+---
+
+# Multi-type Lasso Regularization :
+
+* Consider a response y and the corresponding model matrix $\mathbf{X}$. 
+
+--
+
+* The objective function for a regularized generalized linear model with a multi-type penalty is - 
+
+$$O(\mathbf{β};\mathbf{X},\mathbf{y})=f(β;\mathbf{X},\mathbf{y})+λ \sum_{j = 0}^{J} g_j(β_j)$$
+* Where $f(⋅)$ is minus the log-likelihood function divided by the sample size, $g_j(.)$ a convex function for all $j∈\{0,…,J\}$ and $β_j$ represents a subset of the full parameter vector $β$ such that $(β_0,β_1,…,β_J)=\mathbf{β}$, with $β_0$ the intercept.
+
+--
+
+* As the intercept is usually not regularized, we set $g_0(⋅)=0$.The penalty function $g_j(.)$ serve as a measure to avoid overfitting the data, while the tuning parameter $\lambda$
+ controls the strength of the penalty. 
+ 
+* This paper discusses about different types of penalties, such as - Lasso, Group Lasso,Fused Lasso, Generalized Fused Lasso. And a method to apply these penalties by combining them. 
+
+---
+
+
+# Application on Data :
+
+* We will apply the above discussed methods on "rent" dataset. It is available [Here](http://www.stat.uni-muenchen.de/service/datenarchiv).Also, this data is available in
+"catdata" package in R.
+
+* Let's get some insights about the data. 
+
+.scroll-1000[
+
+```{r}
+
+data(rent,package = "catdata")
+
+dim(rent) # Number of Rows and Columns
+
+str(rent) # About the variables
+
+```
+]
+
+---
+
+# Data Preparation :
+
+```{r,}
+sum(is.na(rent))  #so, no na values
+
+# Urban district in Munich
+rent$area <- as.factor(rent$area)
+
+# Decade of construction
+rent$year <- as.factor(floor(rent$year / 10) * 10)
+
+# Number of rooms
+rent$rooms <- as.factor(rent$rooms)
+
+#Let's make a house quality variable
+rent$quality <- as.factor(rent$good + 2*rent$best)
+levels(rent$quality) <- c("Fair","Good","Excellent")
+
+
+```
+
+* Here, we want our predictors to be categorical, so we will make "size" also, categorical variable.
+
+---
+
+# Data Preparation (Contd.):
+
+```{r}
+
+summary(rent$size)
+
+#But we need to also look that, at end parts, we have very few observations ! 
+# Floor space divided in categories (0, 30), [30, 40), ...,  [120, 130),[130, Inf)
+
+sizeClasses <- c(0, seq(30, 130, 10))
+rent$size <- as.factor(sizeClasses[findInterval(rent$size, sizeClasses)])
+
+```
+
+---
+
+# Data Preparation (Contd.):
+
+```{r,fig.align='center'}
+
+barplot(table(rent$size),angle= seq(10,120,length = 12),density = 10,col = "red")
+
+```
+
+```{r,echo = F,}
+
+# Is warm water present?
+rent$warm <- factor(rent$warm, labels = c("yes", "no"))
+
+# Is central heating present?
+rent$central <- factor(rent$central, labels = c("yes", "no"))
+
+# Does the bathroom have tiles?
+rent$tiles <- factor(rent$tiles, labels = c("yes", "no"))
+
+# Is there special furniture in the bathroom?
+rent$bathextra <- factor(rent$bathextra, labels = c("no", "yes"))
+
+# Is the kitchen well-equipped?
+rent$kitchen <- factor(rent$kitchen, labels = c("no", "yes"))
+
+
+#Final Data set with Structure ! 
+#str(rent)
+
+```
+
+```{r,echo = F,warning=FALSE,message=F,fig.height=7,fig.width=13}
+library(ggplot2)
+
+#ploting theme
+defined_theme <- theme(plot.subtitle = element_text(family = "mono",size = 11,
+                   face = "bold",hjust = 0.01),axis.title = element_text(family = "serif"),
+                   axis.text = element_text(size = 10),plot.title = element_text(family = "serif",
+                   colour = "red", hjust = -0.01),legend.text = element_text(size = 10,family = "serif"), 
+                   legend.title = element_text(family = "serif"),legend.background = element_blank(),
+                   legend.box.background = element_rect(colour = "black")) + 
+                   theme(strip.background = element_rect(fill = "#FFE5B4"))
+
+```
+
+---
+
+# What if we fit model using all variables ? 
+
+.scroll-1000[
+
+```{r,echo=FALSE}
+
+rentData <- rent[,!colnames(rent)%in%c("rent","good","best")]
+#str(rentData)
+
+```
+
+
+```{r,}
+summary(lm(rentm ~.,data = rentData))
+
+#But, we have so many variables, This is because, we have so many indicators!
+
+length(coef(lm(rentm ~. ,data = rentData)))  #56 variables ! 
+
+```
+
+]
+
+---
+
+# Variable Selection Using Lasso :
+
+.scroll-1000[
+
+```{r,fig.align='center'}
+
+X.mat <- model.matrix(rentm ~ . ,data = rentData)[,-1]   #otherwise it is taking size0 into consideration also
+lasso.model <- glmnet::glmnet(X.mat,rentData$rentm,alpha = 1,family = gaussian,lambda = 0.1)
+
+#The variables for which, we have zero coefficient ! 
+colnames(X.mat)[as.vector(coef(lasso.model) == 0)]
+
+```
+
+]
+
+* The coefficients of all dummies corresponding to a variable are not zero together ! 
+
+---
+
+# What if we use Stepwise Criteria ?
+
+.scroll-1000[
+
+```{r}
+
+#stepwise selection can be done !
+library(MASS)
+stepAIC(lm(rentm ~. ,data =  rentData))
+
+```
+
+]
+
+* But, we are having the same problem of so many variables ! 
+
+---
+
+# What about Level Fusion ?
+
+* It could be the case that, with respect to response, some of the levels of a predictor are similar. Then, we can fuse those levels. 
+
+--
+
+* Which will reduce the number of levels of the categorical variable. i.e. .red[number of dummy variables ! ]
+
+--
+
+```{r}
+
+#Another problem ! 
+district.cof <- coef(lm(rentm ~ 0 + area,data = rentData))
+
+```
+
+```{r,echo = F,out.width = "500px",fig.align='center'}
+
+knitr::include_graphics("map_munich.PNG")
+
+```
+
+---
+
+# Using Proposed Method :
+
+```{r,message=FALSE,warning=FALSE}
+
+library(smurf)  #To Implement Smurf Algo 
+
+my.formula <- rentm ~ p(area, pen = "gflasso") + 
+                p(year, pen = "flasso") + p(rooms, pen = "flasso") + 
+              p(quality, pen = "flasso") + p(size, pen = "flasso") +
+                p(warm, pen = "lasso") + p(central, pen = "lasso") + 
+              p(tiles, pen = "lasso") + p(bathextra, pen = "lasso") + 
+                p(kitchen, pen = "lasso") 
+
+munich.fit <- glmsmurf(formula = my.formula, family = gaussian(), data = rentData, 
+                       pen.weights = "glm.stand", lambda = 0.015)
+
+```
+
+--
+
+* Thus, we fitted the model with $\lambda$ = 0.015. $glm.stand$ means that we have used standardized adaptive penalty weights based on an initial GLM fit.
+
+--
+
+* Note that, there is a CV based approach to find **Optimal** $\lambda$.  
+
+---
+
+# Using Proposed Method (Contd.) :
+
+```{r,fig.height=6.2,fig.width=12,fig.align='center'}
+
+plot(munich.fit)
+
+```
+
+---
+
+# Using Proposed Method (Contd.) :
+
+.scroll-1000[
+
+```{r}
+
+summary(munich.fit)
+
+```
+]
+
+---
+
+# Fused Levels of Categorical Variables :
+
+### Area
+```{r,echo=FALSE}
+area.cof <- sort(unique(coef(munich.fit)[2:25]))
+for(i in 1:length(area.cof)){
+  print(names(coef(munich.fit)[2:25])[coef(munich.fit)[2:25] == area.cof[i]])
+}
+```
+
+### Year of Construction
+
+```{r,echo=FALSE}
+
+year.cof <- sort(unique(coef(munich.fit)[26:34]))
+for(i in 1:length(year.cof)){
+  print(names(coef(munich.fit)[26:34])[coef(munich.fit)[26:34] == year.cof[i]])
+}
+
+```
+
+---
+
+# Fused Levels of Categorical Variables (Contd.):
+
+### Size
+
+```{r,echo=FALSE}
+size.cof <- sort(unique(coef(munich.fit)[42:52]))
+for(i in 1:length(size.cof)){
+  print(names(coef(munich.fit)[42:52])[coef(munich.fit)[42:52] == size.cof[i]])
+}
+```
+
+### Number of Rooms
+
+```{r,echo = F}
+room.cof <- sort(unique(coef(munich.fit)[35:39]))
+for(i in 1:length(room.cof)){
+  print(names(coef(munich.fit)[35:39])[coef(munich.fit)[35:39] == room.cof[i]])
+}
+```
+
+* This fusions are very much clear from EDA also !
+
+---
+
+class: middle, center
+
+```{r,echo = F,warning=FALSE,message=FALSE,fig.height=7,fig.width=13}
+
+#Year 
+p1 <- ggplot(data = rent,aes(y = rentm,x = year,col = year)) + geom_point() + geom_smooth(se = F) + 
+  labs(y = "Rent of Flat per square meter in Euros",x = "Year of Construction",title = "ScatterPlot of Year of Construction vs. Rentm",
+       ) + theme_bw(16) + defined_theme
+
+#Rooms
+p2 <- ggplot(data = rent,aes(y = rentm,x = rooms,col = rooms)) + geom_point() + geom_smooth(se = F) + 
+  labs(y = "Rent of Flat per square meter in Euros",x = "Number of Rooms",title = "ScatterPlot of Number of Rooms vs. Rentm",
+       ) + theme_bw(16) + defined_theme
+
+#Quality
+p8 <- ggplot(data = rent,aes(y = rentm,x = size,col = size)) + geom_point() + geom_smooth(se = F) + 
+  labs(y = "Rent of Flat per square meter in Euros",x = "Size",title = "ScatterPlot of Size vs. Rentm",
+  ) + theme_bw(16) + defined_theme
+
+gridExtra::grid.arrange(p2,p1,p8,ncol = 2)
+
+```
+
+---
+
+# Finding Optimal Lambda :
+
+```{r,fig.height=4.4,fig.width = 8,fig.align='center'}
+
+munich.fit.cv <- glmsmurf(formula = my.formula, family = gaussian(), data = rentData, 
+                          pen.weights = "glm.stand", lambda = "cv1se.dev",
+                          control = list(lambda.length = 25L))
+
+munich.fit.cv$lambda
+
+plot_lambda(munich.fit.cv)
+```
+
+
+---
+
+# What if the Response is also Categorical $(m > 2)$ ? 
+
+* If response $y$ is categorical variable having $m(> 2)$ number of categories. then, in general we use Multinomial Logistic Regression. In that case, to find estimates of the parameter maximize the log-likelihood or equivalently minimize negative log-likelihood. 
+
+* If $l(\beta|\mathbf{y};\mathbf{X})$ is the log-likelihood under the multinomial logistic model with parameter vector $\beta$ as mentioned before. Then proceeding in a similar manner we have - 
+
+$$\hat{\beta} = \underset{\beta}{argmin}\ \{ -l(\beta|\mathbf{y};\mathbf{X}) + \sum_{l = 1}^{p}{J_l(\beta_l)}\}$$
+---
+
+# References :
+
+* [JAN GERTHEISS1 AND GERHARD TUTZ : SPARSE MODELING OF CATEGORIAL EXPLANATORY VARIABLES](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-4/issue-4/Sparse-modeling-of-categorial-explanatory-variables/10.1214/10-AOAS355.pdf)
+
+* [Sander,Katrien,2,Tom,and Roel: Sparse regression with Multi-type Regularized Feature modeling](https://arxiv.org/pdf/1810.03136.pdf)
+
+* [Smurf Package](https://cran.r-project.org/web/packages/smurf/smurf.pdf)
+
+---
+
+class: center, middle
+
+```{r,echo = F,out.width = "750px",fig.align='center'}
+
+knitr::include_graphics("thank_you.JPG",)
+
+```

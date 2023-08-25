@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Sparse Modelling with Categorical Predictors</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Shrayan Roy" />
+    <script src="libs/header-attrs-2.22/header-attrs.js"></script>
+    <link href="libs/remark-css-0.0.1/default.css" rel="stylesheet" />
+    <link href="libs/remark-css-0.0.1/default-fonts.css" rel="stylesheet" />
+    <link href="libs/panelset-0.2.6/panelset.css" rel="stylesheet" />
+    <script src="libs/panelset-0.2.6/panelset.js"></script>
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# Sparse Modelling with Categorical Predictors
+]
+.subtitle[
+## A Brief Overview
+]
+.author[
+### Shrayan Roy
+]
+.institute[
+### Indian Statistical Institute, Delhi Center
+]
+.date[
+### 20/05/2023
+]
+
+---
+
+
+&lt;style type="text/css"&gt;
+
+.red{color: red;}
+.green{color: green;}
+.blue{color: blue;}
+
+&lt;/style&gt;
+
+
+
+
+
+# Sparse Modeling :
+
+* It refers to a modeling approach that aims to identify and utilize a small number of important features or variables in a dataset, while ignoring or discarding the less important ones. 
+
+* Here, "sparse" refers to the idea of using a small number of important features or variables in a dataset, while ignoring or discarding the less important ones.
+
+--
+
+* Some frequently used Sparse Modeling approaches are - Lasso Regression, Ridge Regression, Elastic Net Regression.
+
+--
+
+* All these three types also falls under the category of Penalized Regression, as well as Constrained Regression. 
+
+* They help in selecting the important variables by reducing the coefficient of not so important (in a relative sense) to zero. 
+
+* In case of Lasso, the coefficient of that variables in the model become exactly equal to zero.
+
+--
+
+* Thus, using the above approaches we basically select coefficients, rather than variables. 
+
+* If it is a metric variable, it simply means selecting that variable only. But this becomes problematic for .red[categorical explanatory variable]. 
+
+---
+
+# Sparse Modeling(Contd.):
+
+
+* Let us illustrate through example - if a categorical variable have four categories. Then, in a **linear regression model** three dummy variables are needed for that categorical variable. It may happen that using lasso, one dummy is selected. Also, the selection depends on
+the .green[**reference category chosen**].
+
+--
+
+* So, we need to select coefficient in a group wise manner. For that, another sparse modeling approach is available called **Group-Lasso**. This method has a separate objective. But, we can use this for our purpose by considering group of coefficients as the collection of coefficient of the dummy variables corresponding to categorical variables.
+
+--
+
+* But, another important question when we have categorical explanatory variable is that - 
+  
+    Which levels within a categorical explanatory variable are similar with respect to response ?
+
+  
+* This type of questions are particularly important, when the categorical variables have very large number of levels. For example - In Bio-statistics such situation arises very frequently. But, Group-Lasso doesn't take care of this issue. 
+
+--
+
+* Possible solutions may be to use .red[Variable-Fusion] and .red[Fused Lasso].But, we need to tackle the situation differently depending upon Nominal or Ordinal nature of the variable. 
+
+
+---
+
+* These issues and there possible solutions are addressed in the following paper :
+
+
+&lt;img src="paper_cover.PNG" width="750px" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Proposed Solution :
+
+In the following we consider the penalized least squares criterion -
+
+`$$Q_p(\mathbf{\beta}) = (\mathbf{y}−\mathbf{X}\mathbf{\beta})^T(\mathbf{y}−\mathbf{X}\mathbf{\beta}) + λJ(\mathbf{\beta})$$`
+Where, `\(\mathbf{X}\)` is the design matrix. `\(p\)` denotes the number of variables. `\(\mathbf{\beta}\)` is the parameter vector. `\(\mathbf{y}\)` is the vector of observed values of response. Here, response is assumed to be continuous. `\(J(\beta)\)` is the penalty term. The estimate of `\(\beta\)` is obtained by - 
+
+`$$\hat{\beta}=\underset{\beta}{argmin} \ Q_p(\mathbf{\beta})$$`
+
+* Now, the question is what should be the penalty `\(J(\beta)\)`, so that we will get the benefit of both group lasso and variable-fusion ? 
+
+--
+
+* To put things simple, we will assume that our linear regression model consists of only one predictor, which is categorical.
+
+* Corresponding to the categorical predictor, we have `\(k\)` dummy variables `\(x_1,x_2,...,x_k\)`. 
+
+---
+
+# Choice of penalty `\(J(\beta)\)` :
+
+### For Nominal Scale :
+
+`$$J(\beta) = \underset{i&gt;j}\sum w_{ij}|\beta_i − \beta_j|$$`
+
+with weights `\(w_{ij}\)` and `\(\beta_i\)` denoting the coefficient of dummy `\(x_i\)`. Since the ordering of `\(x_0,...,x_k\)` is arbitrary, not only differences `\(\beta_i−\beta_{i−1}\)` (as in original fusion methodology), but all differences `\(\beta_i−\beta_{i−1}\)` are considered. Since `\(i=0\)` is chosen as reference, `\(\beta_0=0\)` is fixed.
+
+### For Ordinal Scale :
+
+`$$J(\beta)=\sum_{i=1}^{k}w_{i}|\beta_i − \beta_{i-1}|$$`
+Since, in the case of ordered categories the ordering of dummy coefficients is meaningful, consecutive differences are considered. 
+
+---
+
+# Computational Issues :
+
+* To find the actual solution, constrained minimization is done instead of penalized minimization.
+
+--
+
+* For estimation purpose original parameters are transformed into `\(\theta_{ij}=\beta_i-\beta_j\)`. So, we have `\(k(k-1)\)` number of parameters. (**For nominal scale variables**)
+
+* But, one has to take care of the restrictions `\(\theta_{ij}=\theta_{i0}-\theta_{j0}\)` `\(\forall{i.j}\)` for estimation purpose.
+
+* For practical estimation, parameters `\(\theta_{ij}\)` are additionally split into positive and negative parts, that is,
+`\(\theta_{ij}=\theta^{+}_{ij}−\theta^{-}_{ij}\)`
+
+--
+
+* **Quadratic programming** is used for minimization purpose. But, there can be some numerical problems with this.
+
+* That's why an approximate solution can be found by - 
+
+`$$\hat{\theta}_{\gamma,\lambda} = \underset{\theta}{argmin}\ \{ (\mathbf{y- Z\theta})^{T}(\mathbf{y- Z\theta}) + \gamma\sum_{i &gt; j &gt; 0}(\theta_{ij}-\theta_{i0}+\theta_{j0})^2 + \lambda\sum_{i&gt;j}|\theta_{ij}|\}$$`
+
+* Where, `\(Z\)` is so that `\(\mathbf{Z\theta}=\mathbf{X\beta}\)`. 
+
+---
+
+# Computational Issues(contd.):
+
+* One can reformulate the problem as a lasso problem. If matrix `\(A\)` represents restrictions `\(\theta_{ij}=\theta_{i0}−\theta_{j0}\)` in terms of `\(\mathbf{A\theta}=0\)`. Then, with augmented data `\(\tilde{Z}=(Z^T,\sqrt{\gamma}A^T)^T\)` and `\(\tilde{y}=(y^T,0)^T\)`, we have - 
+
+`$$\hat{\theta}_{\gamma,\lambda} = \underset{\theta}{argmin} \ \{(\mathbf{\tilde{y} - \tilde{Z}\theta)^{T}}(\mathbf{\tilde{y} - \tilde{Z}\theta)} + \lambda\sum_{i&gt;j}|\theta_{ij}|\}$$`
+
+* By doing this, we can compute the whole path of `\(\hat{\theta}_{\gamma,\lambda}\)`. 
+
+--
+
+* In case of ordinal predictors also, we can reformulate the problem in a similar manner, by defining `\(\delta_{i}=\beta_{i}-\beta_{i-1} \ \forall{ \ i}\)`. Here also we can form a similar lasso problem. 
+
+
+---
+
+# Multiple Input :
+
+* In general, we can have more than one predictor. Then, our penalization criterion will be different.
+
+* Since, our concern is about categorical predictors only. We will consider a model consisting of `\(p\)` categorical predictors `\(x_1,x_2,..x_p\)` with levels `\(0,...,k_l\)` for variable `\(x_l\)` ( `\(l= 1,...,p\)`, and fixed `\(p\)`).
+
+* The corresponding penalty term would be `\(J(\beta)=\sum_{l = 1}^{p}{J_l(\beta_l)}\)` with
+
+  `\(J(\beta_l) = \underset{i&gt;j}\sum w_{ij}^{(l)}|\beta_{li} − \beta_{lj}|\)`    or,  `\(J(\beta_l)=\sum_{i=1}^{k}w_{i}^{(l)}|\beta_i − \beta_{i-1}|\)`
+
+  depending upon the scale level of predictor `\(x_l\)`. The first expression refers to nominal covariates, the second to ordinal ones.
+
+&lt;style type="text/css"&gt;
+.scroll-1000 {
+  max-height: 400px;
+  max-width: 1000px;
+  overflow-y: auto;
+  background-color: inherit;
+}
+&lt;/style&gt;
+
+
+
+---
+
+#Choice of Weights :
+
+* In many situations weights `\(w^{(l)}_{ij} \not= 1\)` are preferred over the simple weights `\(w^{(l)}_{ij} = 1\)`.
+
+* The higher the weights, the higher penalization is made, the more quickly corresponding coefficient will become zero. 
+
+--
+
+* For
+nominal variables .green[Bondell] and .green[Reich] (2009) suggested the weights -  
+
+`$$w^{(l)}_{ij} = (k_l+1)^{-1} \sqrt{\frac{n^{(l)}_i + n^{(l)}_j}{n}}$$`
+Where, `\(n^{(l)}_i\)` and `\(n^{(l)}_j\)` respectively denote the number of observations corresponding to level i,j of `\(x_l\)` and `\(k_l\)` is the number of levels of variable.
+
+--
+
+* There is also adaptive version of weights, where weights contain an additional factor `\(|\beta^{LS}_{li} - \beta^{LS}_{lj}|^{-1}\)`. Basically, if ordinary least square estimates corresponding to two dummy variables are very close. Then, these adaptive version of weights put higher weights i.e. higher penalties. 
+
+---
+
+# Refitting Procedures :
+
+* The most attractive features of the methods described above are variable selection and clustering. 
+
+--
+
+* However, due to penalization,estimates are obviously biased. 
+
+* In regression analysis in general — we are also interested in parameter estimation and prediction accuracy.
+
+* In order to reduce the bias, refitting procedures have been proposed by several authors.
+
+* In refitting approach, we refit the the model using the variables having non-zero coefficients with fused levels.
+
+---
+
+# Application :
+
+* We will apply the above discussed method on a dataset.
+
+--
+
+* Implementation is available in .red[**R**]. 
+
+* But, It is more general. Infact, the available implementation uses **Smurf Algorithm** .
+
+--
+
+* Which is discussed in the paper [Devriendt, S., K. Antonio, T. Reynkens, and R. Verbelen. 2021 : Sparse regression with Multi-type Regularized Feature modeling](https://arxiv.org/pdf/1810.03136.pdf). 
+
+--
+
+* This paper extends the application to glm class of families as well. 
+
+* We will discuss about it briefly.
+
+---
+
+# Multi-type Lasso Regularization :
+
+* Consider a response y and the corresponding model matrix `\(\mathbf{X}\)`. 
+
+--
+
+* The objective function for a regularized generalized linear model with a multi-type penalty is - 
+
+`$$O(\mathbf{β};\mathbf{X},\mathbf{y})=f(β;\mathbf{X},\mathbf{y})+λ \sum_{j = 0}^{J} g_j(β_j)$$`
+* Where `\(f(⋅)\)` is minus the log-likelihood function divided by the sample size, `\(g_j(.)\)` a convex function for all `\(j∈\{0,…,J\}\)` and `\(β_j\)` represents a subset of the full parameter vector `\(β\)` such that `\((β_0,β_1,…,β_J)=\mathbf{β}\)`, with `\(β_0\)` the intercept.
+
+--
+
+* As the intercept is usually not regularized, we set `\(g_0(⋅)=0\)`.The penalty function `\(g_j(.)\)` serve as a measure to avoid overfitting the data, while the tuning parameter `\(\lambda\)`
+ controls the strength of the penalty. 
+ 
+* This paper discusses about different types of penalties, such as - Lasso, Group Lasso,Fused Lasso, Generalized Fused Lasso. And a method to apply these penalties by combining them. 
+
+---
+
+
+# Application on Data :
+
+* We will apply the above discussed methods on "rent" dataset. It is available [Here](http://www.stat.uni-muenchen.de/service/datenarchiv).Also, this data is available in
+"catdata" package in R.
+
+* Let's get some insights about the data. 
+
+.scroll-1000[
+
+
+```r
+data(rent,package = "catdata")
+
+dim(rent) # Number of Rows and Columns
+```
+
+```
+## [1] 2053   13
+```
+
+```r
+str(rent) # About the variables
+```
+
+```
+## 'data.frame':	2053 obs. of  13 variables:
+##  $ rent     : num  741 716 528 554 698 ...
+##  $ rentm    : num  10.9 11.01 8.38 8.52 6.98 ...
+##  $ size     : int  68 65 63 65 100 81 55 79 52 77 ...
+##  $ rooms    : int  2 2 3 3 4 4 2 3 1 3 ...
+##  $ year     : num  1918 1995 1918 1983 1995 ...
+##  $ area     : int  2 2 2 16 16 16 6 6 6 6 ...
+##  $ good     : int  1 1 1 0 1 0 0 0 0 0 ...
+##  $ best     : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ warm     : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ central  : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ tiles    : int  0 0 0 0 0 0 0 0 0 0 ...
+##  $ bathextra: int  0 0 0 1 1 0 1 0 0 0 ...
+##  $ kitchen  : int  0 0 0 0 1 0 0 0 0 0 ...
+```
+]
+
+---
+
+# Data Preparation :
+
+
+```r
+sum(is.na(rent))  #so, no na values
+```
+
+```
+## [1] 0
+```
+
+```r
+# Urban district in Munich
+rent$area &lt;- as.factor(rent$area)
+
+# Decade of construction
+rent$year &lt;- as.factor(floor(rent$year / 10) * 10)
+
+# Number of rooms
+rent$rooms &lt;- as.factor(rent$rooms)
+
+#Let's make a house quality variable
+rent$quality &lt;- as.factor(rent$good + 2*rent$best)
+levels(rent$quality) &lt;- c("Fair","Good","Excellent")
+```
+
+* Here, we want our predictors to be categorical, so we will make "size" also, categorical variable.
+
+---
+
+# Data Preparation (Contd.):
+
+
+```r
+summary(rent$size)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    17.0    53.0    67.0    69.6    83.0   185.0
+```
+
+```r
+#But we need to also look that, at end parts, we have very few observations ! 
+# Floor space divided in categories (0, 30), [30, 40), ...,  [120, 130),[130, Inf)
+
+sizeClasses &lt;- c(0, seq(30, 130, 10))
+rent$size &lt;- as.factor(sizeClasses[findInterval(rent$size, sizeClasses)])
+```
+
+---
+
+# Data Preparation (Contd.):
+
+
+```r
+barplot(table(rent$size),angle= seq(10,120,length = 12),density = 10,col = "red")
+```
+
+&lt;img src="Categorical_presentation_files/figure-html/unnamed-chunk-8-1.png" style="display: block; margin: auto;" /&gt;
+
+
+
+
+
+---
+
+# What if we fit model using all variables ? 
+
+.scroll-1000[
+
+
+
+
+
+```r
+summary(lm(rentm ~.,data = rentData))
+```
+
+```
+## 
+## Call:
+## lm(formula = rentm ~ ., data = rentData)
+## 
+## Residuals:
+##     Min      1Q  Median      3Q     Max 
+## -6.5768 -1.2261 -0.0106  1.2664  7.4314 
+## 
+## Coefficients:
+##                  Estimate Std. Error t value Pr(&gt;|t|)    
+## (Intercept)      12.55465    0.44095  28.472  &lt; 2e-16 ***
+## size30           -1.75504    0.31960  -5.491 4.50e-08 ***
+## size40           -2.93844    0.35074  -8.378  &lt; 2e-16 ***
+## size50           -3.30923    0.36710  -9.015  &lt; 2e-16 ***
+## size60           -3.55919    0.37840  -9.406  &lt; 2e-16 ***
+## size70           -3.65412    0.39090  -9.348  &lt; 2e-16 ***
+## size80           -3.43239    0.40595  -8.455  &lt; 2e-16 ***
+## size90           -3.74051    0.42833  -8.733  &lt; 2e-16 ***
+## size100          -3.79351    0.45119  -8.408  &lt; 2e-16 ***
+## size110          -4.05635    0.51463  -7.882 5.25e-15 ***
+## size120          -3.75377    0.51305  -7.317 3.67e-13 ***
+## size130          -4.51632    0.54033  -8.359  &lt; 2e-16 ***
+## rooms2            0.13908    0.23111   0.602 0.547396    
+## rooms3           -0.05873    0.27266  -0.215 0.829474    
+## rooms4           -0.42677    0.31723  -1.345 0.178681    
+## rooms5           -0.28852    0.44307  -0.651 0.514997    
+## rooms6           -0.46910    0.64839  -0.723 0.469462    
+## year1920         -1.23447    0.26578  -4.645 3.63e-06 ***
+## year1930         -0.91240    0.54200  -1.683 0.092456 .  
+## year1940         -0.91865    0.23147  -3.969 7.48e-05 ***
+## year1950         -0.28600    0.16433  -1.740 0.081951 .  
+## year1960          0.10081    0.16153   0.624 0.532636    
+## year1970          0.35195    0.17814   1.976 0.048322 *  
+## year1980          1.14050    0.19788   5.763 9.52e-09 ***
+## year1990          1.63587    0.19614   8.341  &lt; 2e-16 ***
+## year2000          1.74058    0.43425   4.008 6.34e-05 ***
+## area2            -0.63745    0.34531  -1.846 0.065039 .  
+## area3            -0.38080    0.35650  -1.068 0.285576    
+## area4            -0.66783    0.35224  -1.896 0.058111 .  
+## area5            -0.66286    0.34977  -1.895 0.058223 .  
+## area6            -1.04059    0.39982  -2.603 0.009320 ** 
+## area7            -1.58920    0.40200  -3.953 7.98e-05 ***
+## area8            -1.23597    0.40722  -3.035 0.002435 ** 
+## area9            -0.96061    0.34325  -2.799 0.005182 ** 
+## area10           -1.18611    0.41748  -2.841 0.004541 ** 
+## area11           -1.70978    0.40299  -4.243 2.31e-05 ***
+## area12           -0.65546    0.38157  -1.718 0.085988 .  
+## area13           -0.87245    0.37582  -2.321 0.020362 *  
+## area14           -1.84306    0.40991  -4.496 7.31e-06 ***
+## area15           -1.33236    0.44131  -3.019 0.002567 ** 
+## area16           -1.94262    0.37100  -5.236 1.81e-07 ***
+## area17           -1.36049    0.40065  -3.396 0.000698 ***
+## area18           -0.65397    0.38704  -1.690 0.091247 .  
+## area19           -1.42623    0.37171  -3.837 0.000128 ***
+## area20           -1.29351    0.42392  -3.051 0.002308 ** 
+## area21           -1.37841    0.40994  -3.362 0.000787 ***
+## area22           -1.95732    0.52052  -3.760 0.000175 ***
+## area23           -1.71531    0.62131  -2.761 0.005819 ** 
+## area24           -1.85823    0.49096  -3.785 0.000158 ***
+## area25           -1.43406    0.36647  -3.913 9.42e-05 ***
+## warmno           -1.97776    0.28088  -7.041 2.61e-12 ***
+## centralno        -1.34492    0.19274  -6.978 4.06e-12 ***
+## tilesno          -0.56565    0.11580  -4.885 1.12e-06 ***
+## bathextrayes      0.50728    0.16068   3.157 0.001617 ** 
+## kitchenyes        1.20881    0.17667   6.842 1.03e-11 ***
+## qualityGood       0.38389    0.11180   3.434 0.000607 ***
+## qualityExcellent  1.45541    0.31179   4.668 3.25e-06 ***
+## ---
+## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+## 
+## Residual standard error: 1.963 on 1996 degrees of freedom
+## Multiple R-squared:  0.3842,	Adjusted R-squared:  0.3669 
+## F-statistic: 22.24 on 56 and 1996 DF,  p-value: &lt; 2.2e-16
+```
+
+```r
+#But, we have so many variables, This is because, we have so many indicators!
+
+length(coef(lm(rentm ~. ,data = rentData)))  #56 variables ! 
+```
+
+```
+## [1] 57
+```
+
+]
+
+---
+
+# Variable Selection Using Lasso :
+
+.scroll-1000[
+
+
+```r
+X.mat &lt;- model.matrix(rentm ~ . ,data = rentData)[,-1]   #otherwise it is taking size0 into consideration also
+lasso.model &lt;- glmnet::glmnet(X.mat,rentData$rentm,alpha = 1,family = gaussian,lambda = 0.1)
+
+#The variables for which, we have zero coefficient ! 
+colnames(X.mat)[as.vector(coef(lasso.model) == 0)]
+```
+
+```
+##  [1] "size50"     "size60"     "size90"     "size100"    "size110"   
+##  [6] "size120"    "size130"    "rooms3"     "year1920"   "year1940"  
+## [11] "year1960"   "year1970"   "year1980"   "area3"      "area5"     
+## [16] "area6"      "area7"      "area8"      "area9"      "area10"    
+## [21] "area11"     "area12"     "area13"     "area14"     "area16"    
+## [26] "area18"     "area19"     "area20"     "area21"     "area22"    
+## [31] "area23"     "area24"     "area25"     "warmno"     "kitchenyes"
+```
+
+]
+
+* The coefficients of all dummies corresponding to a variable are not zero together ! 
+
+---
+
+# What if we use Stepwise Criteria ?
+
+.scroll-1000[
+
+
+```r
+#stepwise selection can be done !
+library(MASS)
+stepAIC(lm(rentm ~. ,data =  rentData))
+```
+
+```
+## Start:  AIC=2824.85
+## rentm ~ size + rooms + year + area + warm + central + tiles + 
+##     bathextra + kitchen + quality
+## 
+##             Df Sum of Sq    RSS    AIC
+## - rooms      5     27.39 7716.0 2822.2
+## &lt;none&gt;                   7688.6 2824.8
+## - bathextra  1     38.39 7727.0 2833.1
+## - tiles      1     91.91 7780.5 2847.2
+## - quality    2    113.44 7802.0 2850.9
+## - area      24    335.68 8024.3 2864.6
+## - kitchen    1    180.33 7868.9 2870.4
+## - central    1    187.56 7876.1 2872.3
+## - warm       1    190.98 7879.6 2873.2
+## - size      11    407.55 8096.1 2908.9
+## - year       9    812.04 8500.6 3013.0
+## 
+## Step:  AIC=2822.16
+## rentm ~ size + year + area + warm + central + tiles + bathextra + 
+##     kitchen + quality
+## 
+##             Df Sum of Sq    RSS    AIC
+## &lt;none&gt;                   7716.0 2822.2
+## - bathextra  1     37.93 7753.9 2830.2
+## - tiles      1     90.36 7806.3 2844.1
+## - quality    2    121.23 7837.2 2850.2
+## - area      24    358.91 8074.9 2867.5
+## - central    1    184.29 7900.3 2868.6
+## - kitchen    1    184.48 7900.5 2868.7
+## - warm       1    199.83 7915.8 2872.7
+## - year       9    869.79 8585.8 3023.4
+## - size      11   1242.65 8958.6 3106.7
+```
+
+```
+## 
+## Call:
+## lm(formula = rentm ~ size + year + area + warm + central + tiles + 
+##     bathextra + kitchen + quality, data = rentData)
+## 
+## Coefficients:
+##      (Intercept)            size30            size40            size50  
+##         12.60915          -1.72882          -2.84823          -3.20209  
+##           size60            size70            size80            size90  
+##         -3.52725          -3.69490          -3.59076          -3.97276  
+##          size100           size110           size120           size130  
+##         -4.10447          -4.38564          -4.11300          -4.90214  
+##         year1920          year1930          year1940          year1950  
+##         -1.27327          -0.95402          -0.95763          -0.33108  
+##         year1960          year1970          year1980          year1990  
+##          0.04726           0.31479           1.14442           1.64946  
+##         year2000             area2             area3             area4  
+##          1.73197          -0.62135          -0.38510          -0.68213  
+##            area5             area6             area7             area8  
+##         -0.67469          -1.07912          -1.64010          -1.25604  
+##            area9            area10            area11            area12  
+##         -0.98319          -1.21958          -1.75443          -0.67701  
+##           area13            area14            area15            area16  
+##         -0.90085          -1.90158          -1.35498          -1.98562  
+##           area17            area18            area19            area20  
+##         -1.39077          -0.68531          -1.45288          -1.33861  
+##           area21            area22            area23            area24  
+##         -1.40886          -1.95840          -1.76583          -1.93006  
+##           area25            warmno         centralno           tilesno  
+##         -1.47758          -2.01626          -1.33242          -0.56052  
+##     bathextrayes        kitchenyes       qualityGood  qualityExcellent  
+##          0.50398           1.22064           0.39450           1.50343
+```
+
+]
+
+* But, we are having the same problem of so many variables ! 
+
+---
+
+# What about Level Fusion ?
+
+* It could be the case that, with respect to response, some of the levels of a predictor are similar. Then, we can fuse those levels. 
+
+--
+
+* Which will reduce the number of levels of the categorical variable. i.e. .red[number of dummy variables ! ]
+
+--
+
+
+```r
+#Another problem ! 
+district.cof &lt;- coef(lm(rentm ~ 0 + area,data = rentData))
+```
+
+&lt;img src="map_munich.PNG" width="500px" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Using Proposed Method :
+
+
+```r
+library(smurf)  #To Implement Smurf Algo 
+
+my.formula &lt;- rentm ~ p(area, pen = "gflasso") + 
+                p(year, pen = "flasso") + p(rooms, pen = "flasso") + 
+              p(quality, pen = "flasso") + p(size, pen = "flasso") +
+                p(warm, pen = "lasso") + p(central, pen = "lasso") + 
+              p(tiles, pen = "lasso") + p(bathextra, pen = "lasso") + 
+                p(kitchen, pen = "lasso") 
+
+munich.fit &lt;- glmsmurf(formula = my.formula, family = gaussian(), data = rentData, 
+                       pen.weights = "glm.stand", lambda = 0.015)
+```
+
+--
+
+* Thus, we fitted the model with `\(\lambda\)` = 0.015. `\(glm.stand\)` means that we have used standardized adaptive penalty weights based on an initial GLM fit.
+
+--
+
+* Note that, there is a CV based approach to find **Optimal** `\(\lambda\)`.  
+
+---
+
+# Using Proposed Method (Contd.) :
+
+
+```r
+plot(munich.fit)
+```
+
+&lt;img src="Categorical_presentation_files/figure-html/unnamed-chunk-18-1.png" style="display: block; margin: auto;" /&gt;
+
+---
+
+# Using Proposed Method (Contd.) :
+
+.scroll-1000[
+
+
+```r
+summary(munich.fit)
+```
+
+```
+## 
+## Call:  glmsmurf(formula = my.formula, family = gaussian(), data = rentData, 
+##     lambda = 0.015, pen.weights = "glm.stand")
+## 
+## Deviance residuals of estimated model:
+##    Min. 1st Qu.  Median 3rd Qu.    Max. 
+## -6.5187 -1.2710 -0.0446  1.2723  7.8608 
+## 
+## Deviance residuals of re-estimated model:
+##     Min.  1st Qu.   Median  3rd Qu.     Max. 
+## -6.72931 -1.20614 -0.00988  1.27658  7.31087 
+## 
+## 
+## Coefficients:
+##                  Estimated Re-estimated
+## Intercept         9.5386    9.8393     
+## area2            -0.2308   -0.6143     
+## area3            -0.0874   -0.3186     
+## area4            -0.2308   -0.6143     
+## area5            -0.2308   -0.6143     
+## area6            -0.4012   -1.0251     
+## area7            -0.6068   -1.5929     
+## area8            -0.5636   -1.2734     
+## area9            -0.3808   -0.8987     
+## area10           -0.5636   -1.2734     
+## area11           -0.6068   -1.5929     
+## area12           -0.2308   -0.6143     
+## area13           -0.2343   -0.8164     
+## area14           -0.6641   -1.8353     
+## area15           -0.5636   -1.2734     
+## area16           -0.6641   -1.8353     
+## area17           -0.5636   -1.2734     
+## area18           -0.2308   -0.6143     
+## area19           -0.5636   -1.2734     
+## area20           -0.5636   -1.2734     
+## area21           -0.5636   -1.2734     
+## area22           -0.6641   -1.8353     
+## area23           -0.6068   -1.5929     
+## area24           -0.6641   -1.8353     
+## area25           -0.5636   -1.2734     
+## year1920         -0.8735   -1.0954     
+## year1930         -0.8735   -1.0954     
+## year1940         -0.8735   -1.0954     
+## year1950         -0.0999   -0.3392     
+## year1960          0.0562    0.1433     
+## year1970          0.0562    0.1433     
+## year1980          1.2607    1.1472     
+## year1990          1.6146    1.6630     
+## year2000          1.6146    1.6630     
+## rooms2            *         *          
+## rooms3            *         *          
+## rooms4           -0.2506   -0.3322     
+## rooms5           -0.2506   -0.3322     
+## rooms6           -0.2506   -0.3322     
+## qualityGood       0.4477    0.4058     
+## qualityExcellent  1.1438    1.4851     
+## size30           -1.7456   -1.7200     
+## size40           -3.0820   -2.8586     
+## size50           -3.3505   -3.2048     
+## size60           -3.5182   -3.5551     
+## size70           -3.5182   -3.5551     
+## size80           -3.5182   -3.5551     
+## size90           -3.5775   -3.7763     
+## size100          -3.5775   -3.7763     
+## size110          -3.5775   -3.7763     
+## size120          -3.5775   -3.7763     
+## size130          -4.0986   -4.4644     
+## warmyes           1.7119    2.0287     
+## warmno            *         *          
+## centralyes        1.1642    1.3354     
+## centralno         *         *          
+## tilesyes          0.2223    0.5827     
+## tilesno           *         *          
+## bathextrano       *         *          
+## bathextrayes      *         *          
+## kitchenno        -0.8244   -1.2376     
+## kitchenyes        *         *          
+## --- 
+##  '*' indicates a zero coefficient 
+## 
+## 
+## Null deviance: 12486.047 on 2052 degrees of freedom
+## ------------------- 
+## Estimated model:
+## 
+## Residual deviance: 8052.516 on 2026 degrees of freedom
+## AIC: 8687.961; BIC: 8839.891; GCV score: 4.028
+## Penalized minus log-likelihood: 2.509284
+## ------------------- 
+## Re-estimated model:
+## 
+## Residual deviance: 7769.855 on 2026 degrees of freedom
+## AIC: 8614.601; BIC: 8766.531; GCV score: 3.886
+## Objective function: 2.68333
+## -------------------
+## lambda: 0.015; lambda1: 0; lambda2: 0
+## Number of iterations: 489
+## Final step size: 0.2004883
+## Convergence: Succesful convergence
+```
+]
+
+---
+
+# Fused Levels of Categorical Variables :
+
+### Area
+
+```
+## [1] "area14" "area16" "area22" "area24"
+## [1] "area7"  "area11" "area23"
+## [1] "area8"  "area10" "area15" "area17" "area19" "area20" "area21" "area25"
+## [1] "area6"
+## [1] "area9"
+## [1] "area13"
+## [1] "area2"  "area4"  "area5"  "area12" "area18"
+## [1] "area3"
+```
+
+### Year of Construction
+
+
+```
+## [1] "year1920" "year1930" "year1940"
+## [1] "year1950"
+## [1] "year1960" "year1970"
+## [1] "year1980"
+## [1] "year1990" "year2000"
+```
+
+---
+
+# Fused Levels of Categorical Variables (Contd.):
+
+### Size
+
+
+```
+## [1] "size130"
+## [1] "size90"  "size100" "size110" "size120"
+## [1] "size60" "size70" "size80"
+## [1] "size50"
+## [1] "size40"
+## [1] "size30"
+```
+
+### Number of Rooms
+
+
+```
+## [1] "rooms4" "rooms5" "rooms6"
+## [1] "rooms2" "rooms3"
+```
+
+* This fusions are very much clear from EDA also !
+
+---
+
+class: middle, center
+
+![](Categorical_presentation_files/figure-html/unnamed-chunk-24-1.png)&lt;!-- --&gt;
+
+---
+
+# Finding Optimal Lambda :
+
+
+```r
+munich.fit.cv &lt;- glmsmurf(formula = my.formula, family = gaussian(), data = rentData, 
+                          pen.weights = "glm.stand", lambda = "cv1se.dev",
+                          control = list(lambda.length = 25L))
+
+munich.fit.cv$lambda
+```
+
+```
+## [1] 0.009876752
+```
+
+```r
+plot_lambda(munich.fit.cv)
+```
+
+&lt;img src="Categorical_presentation_files/figure-html/unnamed-chunk-25-1.png" style="display: block; margin: auto;" /&gt;
+
+
+---
+
+# What if the Response is also Categorical `\((m &gt; 2)\)` ? 
+
+* If response `\(y\)` is categorical variable having `\(m(&gt; 2)\)` number of categories. then, in general we use Multinomial Logistic Regression. In that case, to find estimates of the parameter maximize the log-likelihood or equivalently minimize negative log-likelihood. 
+
+* If `\(l(\beta|\mathbf{y};\mathbf{X})\)` is the log-likelihood under the multinomial logistic model with parameter vector `\(\beta\)` as mentioned before. Then proceeding in a similar manner we have - 
+
+`$$\hat{\beta} = \underset{\beta}{argmin}\ \{ -l(\beta|\mathbf{y};\mathbf{X}) + \sum_{l = 1}^{p}{J_l(\beta_l)}\}$$`
+---
+
+# References :
+
+* [JAN GERTHEISS1 AND GERHARD TUTZ : SPARSE MODELING OF CATEGORIAL EXPLANATORY VARIABLES](https://projecteuclid.org/journals/annals-of-applied-statistics/volume-4/issue-4/Sparse-modeling-of-categorial-explanatory-variables/10.1214/10-AOAS355.pdf)
+
+* [Sander,Katrien,2,Tom,and Roel: Sparse regression with Multi-type Regularized Feature modeling](https://arxiv.org/pdf/1810.03136.pdf)
+
+* [Smurf Package](https://cran.r-project.org/web/packages/smurf/smurf.pdf)
+
+---
+
+class: center, middle
+
+&lt;img src="thank_you.JPG" width="750px" style="display: block; margin: auto;" /&gt;
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false,
+"ratio": "16:9"
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
