@@ -1,11 +1,14 @@
 # Sparse Modelling with Categorical Predictors
 
-Sparse Modeling refers to a modeling approach that aims to identify and utilize a small number of important features or variables in a dataset while ignoring or discarding the less important ones. 
-Here, "sparse" refers to the idea of using a small number of important features or variables in a dataset, while ignoring or discarding the less important ones.
-Some frequently used Sparse Modeling approaches are - Lasso Regression, Ridge Regression, and Elastic Net Regression.
-All these three types also fall under the category of Penalized Regression, as well as Constrained Regression. 
-They help in selecting the important variables by reducing the coefficient of not-so-important (in a relative sense) to zero. 
-In the case of Lasso, the coefficient of those variables in the model becomes exactly equal to zero.
-Thus, using the above approaches we basically select coefficients, rather than variables. 
-If it is a metric variable, it simply means selecting that variable only. However, this becomes problematic for categorical explanatory variables. 
+Lasso as a Sparse Modelling Technique is not a good choice in case of Mixed predictor-type problems. 
+Instead, a combination of Group Lasso, Variable Fusion, and Fused Lasso Penalty should be used. A Data Analysis is performed to check the adequacy of the suggested method.
+
+Original Paper : [Sparse modeling of categorial explanatory variables](https://arxiv.org/pdf/1101.1421#:~:text=If%20independent%20variables%20are%20categorial,one%20for%20ordinal%20predic%2D%20tors)
+
+However, we have used a more general method called the "smurf Algorithm". Its implementation is available in **R** as Package - 
+[smurf: Sparse Multi-Type Regularized Feature Modeling](https://cran.r-project.org/web/packages/smurf/) 
+
+
+
+
 
